@@ -1,0 +1,502 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+datasource db {
+  provider = "postgresql"
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// Enums
+enum UserRole {
+  RESEARCHER
+  LAB_MANAGER
+  ADMIN
+  STUDENT
+}
+
+enum PlanType {
+  FREE
+  PRO
+  ENTERPRISE
+}
+
+enum ProtocolCategory {
+  PCR
+  WESTERN_BLOT
+  CELL_CULTURE
+  PROTEIN_EXPRESSION
+  DNA_SEQUENCING
+  MICROSCOPY
+  FLOW_CYTOMETRY
+  ELISA
+  OTHER
+}
+
+enum ExperimentStatus {
+  PLANNED
+  IN_PROGRESS
+  COMPLETED
+  FAILED
+  CANCELLED
+}
+
+enum AnalysisType {
+  GEL_IMAGE
+  WESTERN_BLOT
+  CELL_MORPHOLOGY
+  TROUBLESHOOTING
+  PROTOCOL_OPTIMIZATION
+  DATA_INTERPRETATION
+}
+
+enum AttachmentType {
+  IMAGE
+  VIDEO
+  DOCUMENT
+  DATA_FILE
+  AUDIO
+}
+
+enum IssueType {
+  CONTAMINATION
+  EQUIPMENT_FAILURE
+  PROTOCOL_ERROR
+  REAGENT_ISSUE
+  DATA_QUALITY
+  SAFETY_CONCERN
+  OTHER
+}
+
+enum SeverityLevel {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum IssueStatus {
+  OPEN
+  IN_PROGRESS
+  RESOLVED
+  CLOSED
+}
+
+enum EquipmentType {
+  THERMOCYCLER
+  CENTRIFUGE
+  MICROSCOPE
+  SPECTROPHOTOMETER
+  INCUBATOR
+  AUTOCLAVE
+  ELECTROPHORESIS
+  BLOTTER
+  OTHER
+}
+
+enum EquipmentStatus {
+  OPERATIONAL
+  MAINTENANCE
+  OUT_OF_SERVICE
+  DECOMMISSIONED
+}
+
+enum TeamRole {
+  MEMBER
+  LEADER
+  ADMIN
+}
+
+enum VoiceContextType {
+  EXPERIMENT_GUIDANCE
+  TROUBLESHOOTING
+  PROTOCOL_QUERY
+  CALCULATION
+  GENERAL_QUESTION
+}
+
+enum CalculationType {
+  MOLARITY
+  DILUTION
+  CONCENTRATION
+  UNIT_CONVERSION
+  REACTION_VOLUME
+  SAMPLE_PREPARATION
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  PAST_DUE
+  CANCELLED
+  EXPIRED
+}
+
+enum ThemeType {
+  LIGHT
+  DARK
+  SYSTEM
+}
+
+enum MeasurementSystem {
+  METRIC
+  IMPERIAL
+}
+
+model User {
+  id            String    @id @default(uuid())
+  email         String    @unique
+  password      String    // Hashed password
+  name          String?
+  avatarUrl     String?
+  role          UserRole  @default(RESEARCHER)
+  plan          PlanType  @default(FREE)
+  instituition  String?
+  department    String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  lastLoginAt   DateTime?
+
+  // Relations
+  experiments   Experiment[]
+  protocols     Protocol[]
+  teams         TeamMember[]
+  settings      UserSettings?
+  subscriptions Subscription[]
+  analyses      Analysis[]
+  reportedIssues Issue[]   @relation("ReportedIssues")
+  resolvedIssues Issue[]   @relation("ResolvedIssues")
+  calculations Calculation[]
+  voiceInteractions VoiceInteraction[]
+  attachments   Attachment[]
+  
+  @@index([email])
+  @@index([createdAt])
+  labs Lab[]
+}
+
+model UserSettings {
+  id                String           @id @default(uuid())
+  userId            String           @unique
+  user              User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  theme            ThemeType        @default(LIGHT)
+  language         String           @default("en")
+  measurementSystem MeasurementSystem @default(METRIC)
+  emailNotifications Boolean        @default(true)
+  pushNotifications Boolean        @default(true)
+  experimentAlerts  Boolean        @default(true)
+  defaultLabId     String?
+  defaultProtocolCategory ProtocolCategory?
+  preferredAnalysisModel String?    @default("nova-2-lite")
+  preferredVoiceModel String?      @default("nova-2-sonic")
+  
+  defaultLab       Lab?            @relation(fields: [defaultLabId], references: [id])
+  
+  @@index([userId])
+}
+
+model Protocol {
+  id            String           @id @default(uuid())
+  name          String
+  description   String?
+  category      ProtocolCategory
+  version       String           @default("1.0.0")
+  isPublic      Boolean          @default(false)
+  isTemplate    Boolean          @default(false)
+  
+  // JSON fields for flexible data
+  materials     Json
+  steps         Json
+  conditions    Json
+  
+  safetyNotes   String?
+  references   String?
+  
+  createdById   String
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+  lastUsedAt   DateTime?
+  usageCount   Int              @default(0)
+  
+  // Relations
+  createdBy     User             @relation(fields: [createdById], references: [id])
+  experiments   Experiment[]
+  protocolTags  ProtocolTag[]    @relation("ProtocolTags")
+  voiceInteractions VoiceInteraction[]
+  
+  @@index([createdById])
+  @@index([category])
+  @@index([createdAt])
+  protocolOnTags ProtocolOnTags[]
+}
+
+model ProtocolTag {
+  id        String   @id @default(uuid())
+  name      String   @unique
+  color     String?  @default("#3b82f6")
+  protocols Protocol[] @relation("ProtocolTags")
+  protocolOnTags ProtocolOnTags[]
+}
+
+model Experiment {
+  id          String           @id @default(uuid())
+  title       String
+  description String?
+  status      ExperimentStatus @default(PLANNED)
+  
+  // Protocol reference
+  protocolId  String
+  protocol    Protocol         @relation(fields: [protocolId], references: [id])
+  
+  // Experiment details
+  startDate   DateTime?
+  endDate     DateTime?
+  notes       String?
+  variables   Json
+  results     Json?
+  conclusion  String?
+  success     Boolean?
+  
+  // Metadata
+  createdById String
+  labId       String?
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime        @updatedAt
+  
+  // Relations
+  createdBy   User             @relation(fields: [createdById], references: [id])
+  lab         Lab?             @relation(fields: [labId], references: [id])
+  attachments Attachment[]
+  analyses    Analysis[]
+  issues      Issue[]
+  voiceInteractions VoiceInteraction[]
+  
+  @@index([createdById])
+  @@index([protocolId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model Analysis {
+  id            String       @id @default(uuid())
+  experimentId  String
+  type          AnalysisType
+  inputData     Json
+  modelUsed     String
+  observations Json
+  confidence   Float?
+  recommendations Json
+  nextSteps     Json
+  
+  // Metadata
+  requestedById String
+  requestedAt   DateTime     @default(now())
+  completedAt   DateTime?
+  processingTime Int?
+  
+  // Relations
+  experiment   Experiment    @relation(fields: [experimentId], references: [id])
+  requestedBy  User         @relation(fields: [requestedById], references: [id])
+  
+  @@index([experimentId])
+  @@index([type])
+  @@index([requestedAt])
+}
+
+model Attachment {
+  id            String         @id @default(uuid())
+  experimentId  String
+  type          AttachmentType
+  fileName      String
+  fileSize      Int
+  mimeType      String
+  url           String
+  thumbnailUrl  String?
+  description   String?
+  
+  // Metadata
+  uploadedById  String
+  uploadedAt    DateTime      @default(now())
+  
+  // Relations
+  experiment    Experiment    @relation(fields: [experimentId], references: [id])
+  uploadedBy    User          @relation(fields: [uploadedById], references: [id])
+  
+  @@index([experimentId])
+  @@index([type])
+  @@index([uploadedAt])
+}
+
+model Issue {
+  id            String         @id @default(uuid())
+  experimentId  String
+  type          IssueType
+  severity      SeverityLevel  @default(MEDIUM)
+  description   String
+  status        IssueStatus    @default(OPEN)
+  
+  // Resolution
+  resolvedById  String?
+  resolvedAt    DateTime?
+  resolution   String?
+  
+  // Metadata
+  reportedById  String
+  reportedAt    DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  
+  // Relations
+  experiment    Experiment     @relation(fields: [experimentId], references: [id])
+  reportedBy    User           @relation("ReportedIssues", fields: [reportedById], references: [id])
+  resolvedBy    User?          @relation("ResolvedIssues", fields: [resolvedById], references: [id])
+  
+  @@index([experimentId])
+  @@index([type])
+  @@index([status])
+  @@index([severity])
+}
+
+model Lab {
+  id            String         @id @default(uuid())
+  name          String
+  description   String?
+  location      String?
+  contactEmail  String?
+  settings      Json
+  createdById   String
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  
+  // Relations
+  createdBy     User           @relation(fields: [createdById], references: [id])
+  members       TeamMember[]
+  experiments   Experiment[]
+  equipment     Equipment[]
+  userSettings  UserSettings[]
+  
+  @@index([createdById])
+}
+
+model TeamMember {
+  id        String   @id @default(uuid())
+  userId    String
+  labId     String
+  role      TeamRole @default(MEMBER)
+  joinedAt  DateTime @default(now())
+  
+  // Relations
+  user      User     @relation(fields: [userId], references: [id])
+  lab       Lab      @relation(fields: [labId], references: [id])
+  
+  @@unique([userId, labId])
+  @@index([labId])
+}
+
+model Equipment {
+  id              String          @id @default(uuid())
+  labId           String
+  name            String
+  type            EquipmentType
+  model           String?
+  serialNumber    String?
+  status          EquipmentStatus @default(OPERATIONAL)
+  lastCalibration DateTime?
+  nextCalibration DateTime?
+  purchasedAt     DateTime?
+  notes           String?
+  
+  // Relations
+  lab             Lab            @relation(fields: [labId], references: [id])
+  
+  @@index([labId])
+  @@index([type])
+  @@index([status])
+}
+
+model VoiceInteraction {
+  id              String          @id @default(uuid())
+  userId          String
+  sessionId       String         @unique
+  inputAudioUrl   String?
+  transcript      String?
+  modelUsed       String
+  response        String?
+  responseAudioUrl String?
+  contextType     VoiceContextType
+  experimentId    String?
+  protocolId      String?
+  
+  // Metadata
+  startedAt       DateTime       @default(now())
+  endedAt         DateTime?
+  processingTime  Int?
+  
+  // Relations
+  user            User           @relation(fields: [userId], references: [id])
+  experiment      Experiment?    @relation(fields: [experimentId], references: [id])
+  protocol        Protocol?       @relation(fields: [protocolId], references: [id])
+  
+  @@index([userId])
+  @@index([startedAt])
+  @@index([contextType])
+}
+
+model Calculation {
+  id              String         @id @default(uuid())
+  userId          String
+  type            CalculationType
+  input           Json
+  result          Json
+  formulaUsed     String?
+  performedAt     DateTime      @default(now())
+  
+  // Relations
+  user            User          @relation(fields: [userId], references: [id])
+  
+  @@index([userId])
+  @@index([type])
+  @@index([performedAt])
+}
+
+model Subscription {
+  id                    String             @id @default(uuid())
+  userId                String
+  plan                  PlanType
+  status                SubscriptionStatus @default(ACTIVE)
+  
+  // Billing
+  stripeCustomerId      String?
+  stripeSubscriptionId  String?
+  currentPeriodStart   DateTime?
+  currentPeriodEnd     DateTime?
+  cancelAtPeriodEnd    Boolean            @default(false)
+  
+  // Usage limits
+  maxExperiments       Int?
+  maxStorageMB         Int?
+  maxAnalyses          Int?
+  
+  // Metadata
+  createdAt           DateTime           @default(now())
+  updatedAt           DateTime           @updatedAt
+  
+  // Relations
+  user                User               @relation(fields: [userId], references: [id])
+  
+  @@index([userId])
+  @@index([status])
+  @@index([currentPeriodEnd])
+}
+
+// Junction table for many-to-many protocol tags
+model ProtocolOnTags {
+  protocolId   String
+  tagId       String
+  protocol    Protocol @relation(fields: [protocolId], references: [id], onDelete: Cascade)
+  tag         ProtocolTag @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([protocolId, tagId])
+  @@index([protocolId])
+  @@index([tagId])
+}

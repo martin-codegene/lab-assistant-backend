@@ -1,0 +1,36 @@
+{
+  "name": "lab-app-backend",
+  "type": "module",
+  "scripts": {
+    "dev": "bun --watch src/local.ts",
+    "dev:hot": "bun --hot src/local.ts",
+    "dev:debug": "bun --inspect --watch src/local.ts",
+    "build": "esbuild --bundle --outfile=dist/index.js --platform=node --target=node20 --format=esm src/index.ts",
+    "zip": "zip -j lambda.zip dist/index.js",
+    "update": "aws lambda update-function-code --function-name hello --zip-file fileb://lambda.zip",
+    "deploy": "run-s build zip update",
+    "prisma:generate": "prisma generate",
+    "prisma:migrate": "prisma migrate dev",
+    "prisma:studio": "prisma studio",
+    "prisma:push": "prisma db push",
+    "prisma:deploy": "prisma migrate deploy",
+    "prisma:reset": "prisma migrate reset",
+    "prisma:seed": "bun run prisma/seed.ts"
+  },
+  "devDependencies": {
+    "@hono/node-server": "^1.19.9",
+    "@prisma/client": "^7.4.1",
+    "@types/node": "^25.3.0",
+    "esbuild": "^0.21.4",
+    "nodemon": "^3.1.14",
+    "npm-run-all2": "^6.2.0",
+    "prisma": "^7.4.1"
+  },
+  "dependencies": {
+    "@types/bcryptjs": "^3.0.0",
+    "@types/jsonwebtoken": "^9.0.10",
+    "bcryptjs": "^3.0.3",
+    "hono": "^4.12.1",
+    "jsonwebtoken": "^9.0.3"
+  }
+}

@@ -5,12 +5,13 @@ import { protocolRoutes } from '@presentation/routes/protocol-routes'
 import { experimentRoutes } from '@presentation/routes/experiment-routes'
 import { analysisRoutes } from '@presentation/routes/analysis-routes'
 import { cors } from 'hono/cors'
+import { logger } from 'hono/logger'
 
 const app = new Hono()
 
 // Middleware
 app.use('*', cors())
-
+app.use(logger())
 
 // Health check
 app.get('/', (c) => {

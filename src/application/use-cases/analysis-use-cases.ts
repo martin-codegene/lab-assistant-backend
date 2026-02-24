@@ -354,9 +354,34 @@ export class AnalysisUseCases {
 
       const analysisId = analysisResult.data.id;
 
-      // Call AI service for actual analysis
+      console.log(analysisResult.data)
+
+      const prompt = [
+        "You are an expert laboratory troubleshooting assistant.",
+        "Given the following experimental problem description and context, analyze the situation and respond with a single JSON object with this exact structure:",
+        "{",
+        '  "observations": [',
+        '    { "type": string, "description": string, "confidence"?: number }',
+        "  ],",
+        '  "recommendations": [',
+        '    { "action": string, "priority": "LOW" | "MEDIUM" | "HIGH" | "CRITICAL", "rationale"?: string, "estimatedTime"?: string, "resources"?: string[] }',
+        "  ],",
+        '  "next_steps": [',
+        '    { "step": string, "description": string, "dependencies"?: string[] }',
+        "  ],",
+        '  "confidence": number',
+        "}",
+        "Do not include any explanations, markdown, or text outside of the JSON.",
+        "",
+        "Problem description:",
+        problem,
+        "",
+        "Context JSON:",
+        JSON.stringify(context || {}, null, 2),
+      ].join("\n");
+
       const aiResult = await this.aiService.analyzeText({
-        prompt: problem,
+        prompt,
         context,
         analysisType: AnalysisType.TROUBLESHOOTING,
       });
@@ -386,6 +411,7 @@ export class AnalysisUseCases {
     try {
       const startTime = Date.now();
 
+
       const analysisResult = await this.createAnalysis({
         experimentId,
         type: AnalysisType.PROTOCOL_OPTIMIZATION,
@@ -403,9 +429,29 @@ export class AnalysisUseCases {
 
       const analysisId = analysisResult.data.id;
 
-      // Call AI service for actual analysis
-      const prompt = `Optimize the following protocol:\n${JSON.stringify(currentProtocol, null, 2)}\n\nIssues to address: ${issues?.join(", ") || "None specified"}`;
-      
+      const prompt = [
+        "You are an expert lab protocol optimization assistant.",
+        "Given the following protocol (in JSON) and list of issues, analyze and respond with a single JSON object with this exact structure:",
+        "{",
+        '  "observations": [',
+        '    { "type": string, "description": string, "confidence"?: number }',
+        "  ],",
+        '  "recommendations": [',
+        '    { "action": string, "priority": "LOW" | "MEDIUM" | "HIGH" | "CRITICAL", "rationale"?: string, "estimatedTime"?: string, "resources"?: string[] }',
+        "  ],",
+        '  "next_steps": [',
+        '    { "step": string, "description": string, "dependencies"?: string[] }',
+        "  ],",
+        '  "confidence": number',
+        "}",
+        "Do not include any explanations, markdown, or text outside of the JSON.",
+        "",
+        "Protocol JSON:",
+        JSON.stringify(currentProtocol, null, 2),
+        "",
+        `Issues to address: ${issues?.join(", ") || "None specified"}`,
+      ].join("\n");
+
       const aiResult = await this.aiService.analyzeText({
         prompt,
         context: { currentProtocol, issues },

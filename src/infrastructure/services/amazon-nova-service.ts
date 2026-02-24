@@ -121,8 +121,7 @@ export class AmazonNovaService implements IAIService {
     try {
       // TODO: Replace this with actual Amazon Nova API call
       // Example integration:
-      /*
-      const response = await fetch(`${this.config.endpoint}/analyze-text`, {
+      const response = await fetch(`${this.config.endpoint}chat/completions`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${this.config.apiKey}`,
@@ -133,19 +132,28 @@ export class AmazonNovaService implements IAIService {
           prompt: input.prompt,
           context: input.context,
           analysis_type: input.analysisType,
+          messages: [
+            {
+              role: "user",
+              content: input.prompt,
+            },
+          ]
         }),
       });
 
-      const data = await response.json();
+      // console.log(await response.json())
+      const res = await response.json()
+      const parsedRes = JSON.parse(res.choices[0].message.content.replace('```json', '').replace('```', ''))
       
+
       return {
-        observations: data.observations,
-        recommendations: data.recommendations,
-        nextSteps: data.next_steps,
-        confidence: data.confidence,
+        observations: parsedRes.observations,
+        recommendations: parsedRes.recommendations,
+        nextSteps: parsedRes.next_steps,
+        confidence: parsedRes.confidence,
         processingTime: Date.now() - startTime,
       };
-      */
+      
 
       // Mock response for development
       return this.getMockTextAnalysis(input, startTime);

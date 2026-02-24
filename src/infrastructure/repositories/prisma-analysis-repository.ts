@@ -17,11 +17,16 @@ export class PrismaAnalysisRepository implements IAnalysisRepository {
   }
 
   async save(analysis: Analysis): Promise<void> {
+    const {  updatedAt, ...data} = analysis;
     await prisma.analysis.upsert({
       where: { id: analysis.id },
-      create: this.mapToPrisma(analysis),
-      update: this.mapToPrisma(analysis),
-    });
+      create: this.mapToPrisma(data),
+      update: this.mapToPrisma(data),
+      include: {
+        experiment: true,
+        requestedBy: true,
+      },
+    }, );
   }
 
   async delete(id: string): Promise<void> {

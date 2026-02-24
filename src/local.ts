@@ -4,11 +4,14 @@ import { userRoutes } from '@presentation/routes/user-routes'
 import { protocolRoutes } from '@presentation/routes/protocol-routes'
 import { experimentRoutes } from '@presentation/routes/experiment-routes'
 import { cors } from 'hono/cors'
+import { logger } from 'hono/logger'
+import { analysisRoutes } from '@presentation/routes/analysis-routes'
 
 const app = new Hono()
 
 // Middleware
 app.use('*', cors())
+app.use(logger())
 
 // Health check
 app.get('/', (c) => {
@@ -23,6 +26,8 @@ app.get('/', (c) => {
 app.route('/api/users', userRoutes)
 app.route('/api/protocols', protocolRoutes)
 app.route('/api/experiments', experimentRoutes)
+app.route('/api/analyses', analysisRoutes)
+
 
 // 404 handler
 app.notFound((c) => {

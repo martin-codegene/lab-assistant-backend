@@ -55,7 +55,6 @@ protectedRoutes.get('/:id', async (c: AuthContext) => {
 protectedRoutes.get('/:id/analyses', async (c: AuthContext) => {
   const id = c.req.param('id')
   const result = await experimentUseCases.getExperimentWithAnalyses(id)
-  console.log(result)
 
   if (!result.success) {
     return c.json({ error: result.error }, 404)

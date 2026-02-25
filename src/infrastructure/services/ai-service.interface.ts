@@ -62,12 +62,25 @@ export interface TextAnalysisResult {
   processingTime: number;
 }
 
+export type ChatRole = "system" | "user" | "assistant";
+
+export interface ChatMessage {
+  role: ChatRole;
+  content: string;
+}
+
+export interface ChatResult {
+  message: ChatMessage;
+}
+
 export interface IAIService {
   // Image analysis (for gel images, western blots, microscopy)
   analyzeImage(input: ImageAnalysisInput): Promise<ImageAnalysisResult>;
   
   // Text-based analysis (for troubleshooting, protocol optimization)
   analyzeText(input: TextAnalysisInput): Promise<TextAnalysisResult>;
+  
+  chat(messages: ChatMessage[]): Promise<ChatResult>;
   
   // Check if service is available
   isAvailable(): Promise<boolean>;

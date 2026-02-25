@@ -144,6 +144,11 @@ enum MeasurementSystem {
   IMPERIAL
 }
 
+enum ChatMessageRole {
+  USER
+  ASSISTANT
+}
+
 model User {
   id            String    @id @default(uuid())
   email         String    @unique
@@ -170,7 +175,9 @@ model User {
   calculations Calculation[]
   voiceInteractions VoiceInteraction[]
   attachments   Attachment[]
-  
+  uploads       Uploads[]
+  chatSessions  ChatSession[]
+
   @@index([email])
   @@index([createdAt])
   labs Lab[]
@@ -190,9 +197,9 @@ model UserSettings {
   defaultProtocolCategory ProtocolCategory?
   preferredAnalysisModel String?    @default("nova-2-lite")
   preferredVoiceModel String?      @default("nova-2-sonic")
-  
+
   defaultLab       Lab?            @relation(fields: [defaultLabId], references: [id])
-  
+
   @@index([userId])
 }
 
@@ -204,27 +211,28 @@ model Protocol {
   version       String           @default("1.0.0")
   isPublic      Boolean          @default(false)
   isTemplate    Boolean          @default(false)
-  
+
   // JSON fields for flexible data
   materials     Json
   steps         Json
   conditions    Json
-  
+
   safetyNotes   String?
   references   String?
-  
+
   createdById   String
   createdAt    DateTime         @default(now())
   updatedAt    DateTime         @updatedAt
   lastUsedAt   DateTime?
   usageCount   Int              @default(0)
-  
+
   // Relations
   createdBy     User             @relation(fields: [createdById], references: [id])
   experiments   Experiment[]
   protocolTags  ProtocolTag[]    @relation("ProtocolTags")
   voiceInteractions VoiceInteraction[]
-  
+  chatSessions  ChatSession[]
+
   @@index([createdById])
   @@index([category])
   @@index([createdAt])
@@ -244,11 +252,11 @@ model Experiment {
   title       String
   description String?
   status      ExperimentStatus @default(PLANNED)
-  
+
   // Protocol reference
   protocolId  String
   protocol    Protocol         @relation(fields: [protocolId], references: [id])
-  
+
   // Experiment details
   startDate   DateTime?
   endDate     DateTime?
@@ -257,13 +265,13 @@ model Experiment {
   results     Json?
   conclusion  String?
   success     Boolean?
-  
+
   // Metadata
   createdById String
   labId       String?
   createdAt   DateTime         @default(now())
   updatedAt   DateTime        @updatedAt
-  
+
   // Relations
   createdBy   User             @relation(fields: [createdById], references: [id])
   lab         Lab?             @relation(fields: [labId], references: [id])
@@ -271,7 +279,8 @@ model Experiment {
   analyses    Analysis[]
   issues      Issue[]
   voiceInteractions VoiceInteraction[]
-  
+  chatSessions ChatSession[]
+
   @@index([createdById])
   @@index([protocolId])
   @@index([status])
@@ -288,17 +297,17 @@ model Analysis {
   confidence   Float?
   recommendations Json
   nextSteps     Json
-  
+
   // Metadata
   requestedById String
   requestedAt   DateTime     @default(now())
   completedAt   DateTime?
   processingTime Int?
-  
+
   // Relations
   experiment   Experiment    @relation(fields: [experimentId], references: [id])
   requestedBy  User         @relation(fields: [requestedById], references: [id])
-  
+
   @@index([experimentId])
   @@index([type])
   @@index([requestedAt])
@@ -314,15 +323,15 @@ model Attachment {
   url           String
   thumbnailUrl  String?
   description   String?
-  
+
   // Metadata
   uploadedById  String
   uploadedAt    DateTime      @default(now())
-  
+
   // Relations
   experiment    Experiment    @relation(fields: [experimentId], references: [id])
   uploadedBy    User          @relation(fields: [uploadedById], references: [id])
-  
+
   @@index([experimentId])
   @@index([type])
   @@index([uploadedAt])
@@ -335,22 +344,22 @@ model Issue {
   severity      SeverityLevel  @default(MEDIUM)
   description   String
   status        IssueStatus    @default(OPEN)
-  
+
   // Resolution
   resolvedById  String?
   resolvedAt    DateTime?
   resolution   String?
-  
+
   // Metadata
   reportedById  String
   reportedAt    DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
-  
+
   // Relations
   experiment    Experiment     @relation(fields: [experimentId], references: [id])
   reportedBy    User           @relation("ReportedIssues", fields: [reportedById], references: [id])
   resolvedBy    User?          @relation("ResolvedIssues", fields: [resolvedById], references: [id])
-  
+
   @@index([experimentId])
   @@index([type])
   @@index([status])
@@ -367,14 +376,14 @@ model Lab {
   createdById   String
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
-  
+
   // Relations
   createdBy     User           @relation(fields: [createdById], references: [id])
   members       TeamMember[]
   experiments   Experiment[]
   equipment     Equipment[]
   userSettings  UserSettings[]
-  
+
   @@index([createdById])
 }
 
@@ -384,11 +393,11 @@ model TeamMember {
   labId     String
   role      TeamRole @default(MEMBER)
   joinedAt  DateTime @default(now())
-  
+
   // Relations
   user      User     @relation(fields: [userId], references: [id])
   lab       Lab      @relation(fields: [labId], references: [id])
-  
+
   @@unique([userId, labId])
   @@index([labId])
 }
@@ -405,10 +414,10 @@ model Equipment {
   nextCalibration DateTime?
   purchasedAt     DateTime?
   notes           String?
-  
+
   // Relations
   lab             Lab            @relation(fields: [labId], references: [id])
-  
+
   @@index([labId])
   @@index([type])
   @@index([status])
@@ -426,17 +435,17 @@ model VoiceInteraction {
   contextType     VoiceContextType
   experimentId    String?
   protocolId      String?
-  
+
   // Metadata
   startedAt       DateTime       @default(now())
   endedAt         DateTime?
   processingTime  Int?
-  
+
   // Relations
   user            User           @relation(fields: [userId], references: [id])
   experiment      Experiment?    @relation(fields: [experimentId], references: [id])
   protocol        Protocol?       @relation(fields: [protocolId], references: [id])
-  
+
   @@index([userId])
   @@index([startedAt])
   @@index([contextType])
@@ -450,10 +459,10 @@ model Calculation {
   result          Json
   formulaUsed     String?
   performedAt     DateTime      @default(now())
-  
+
   // Relations
   user            User          @relation(fields: [userId], references: [id])
-  
+
   @@index([userId])
   @@index([type])
   @@index([performedAt])
@@ -464,29 +473,67 @@ model Subscription {
   userId                String
   plan                  PlanType
   status                SubscriptionStatus @default(ACTIVE)
-  
+
   // Billing
   stripeCustomerId      String?
   stripeSubscriptionId  String?
   currentPeriodStart   DateTime?
   currentPeriodEnd     DateTime?
   cancelAtPeriodEnd    Boolean            @default(false)
-  
+
   // Usage limits
   maxExperiments       Int?
   maxStorageMB         Int?
   maxAnalyses          Int?
-  
+
   // Metadata
   createdAt           DateTime           @default(now())
   updatedAt           DateTime           @updatedAt
-  
+
   // Relations
   user                User               @relation(fields: [userId], references: [id])
-  
+
   @@index([userId])
   @@index([status])
   @@index([currentPeriodEnd])
+}
+
+model ChatSession {
+  id           String   @id @default(uuid())
+  userId       String
+  title        String   @default("New Chat")
+
+  // Optional context — a session can be pinned to an experiment or protocol
+  experimentId String?
+  protocolId   String?
+
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // Relations
+  user         User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  experiment   Experiment? @relation(fields: [experimentId], references: [id], onDelete: SetNull)
+  protocol     Protocol?   @relation(fields: [protocolId], references: [id], onDelete: SetNull)
+  messages     ChatSessionMessage[]
+
+  @@index([userId])
+  @@index([createdAt])
+  @@index([experimentId])
+  @@index([protocolId])
+}
+
+model ChatSessionMessage {
+  id        String          @id @default(uuid())
+  sessionId String
+  role      ChatMessageRole
+  content   String
+  createdAt DateTime        @default(now())
+
+  // Relations
+  session   ChatSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId])
+  @@index([createdAt])
 }
 
 // Junction table for many-to-many protocol tags
@@ -499,4 +546,20 @@ model ProtocolOnTags {
   @@id([protocolId, tagId])
   @@index([protocolId])
   @@index([tagId])
+}
+
+model Uploads {
+  id         String   @id @default(uuid())
+  name       String // original file name
+  url        String // public/private URL returned by the adapter
+  key        String   @unique // storage key (e.g. "products/uuid.jpg")
+  type       String // MIME type (e.g. "image/jpeg")
+  size       Int // file size in bytes
+  uploaderId String
+  uploader   User     @relation(fields: [uploaderId], references: [id])
+  isPublic   Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@map("uploads")
 }

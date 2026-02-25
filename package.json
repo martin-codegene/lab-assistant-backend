@@ -27,6 +27,7 @@
     "prisma": "^7.4.1"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.996.0",
     "@types/bcryptjs": "^3.0.0",
     "@types/jsonwebtoken": "^9.0.10",
     "@types/logger": "^0.0.5",

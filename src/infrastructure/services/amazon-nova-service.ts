@@ -7,6 +7,8 @@ import {
   ImageAnalysisResult,
   TextAnalysisInput,
   TextAnalysisResult,
+  ChatMessage,
+  ChatResult,
 } from "./ai-service.interface";
 import { AnalysisType } from "@domain/analysis";
 
@@ -36,7 +38,8 @@ export class AmazonNovaService implements IAIService {
       region: process.env.AMAZON_NOVA_REGION || "us-east-1",
       endpoint: process.env.AMAZON_NOVA_ENDPOINT,
       model: {
-        multimodal: process.env.AMAZON_NOVA_MULTIMODAL_MODEL || "nova-multimodal-v1",
+        multimodal:
+          process.env.AMAZON_NOVA_MULTIMODAL_MODEL || "nova-multimodal-v1",
         text: process.env.AMAZON_NOVA_TEXT_MODEL || "nova-2-lite",
         voice: process.env.AMAZON_NOVA_VOICE_MODEL || "nova-2-sonic",
       },
@@ -71,43 +74,116 @@ export class AmazonNovaService implements IAIService {
     const startTime = Date.now();
 
     if (!this.isConfigured) {
-      throw new Error("Amazon Nova service is not configured. Please set AMAZON_NOVA_API_KEY in environment variables.");
+      throw new Error(
+        "Amazon Nova service is not configured. Please set AMAZON_NOVA_API_KEY in environment variables.",
+      );
     }
 
     try {
-      // TODO: Replace this with actual Amazon Nova API call
-      // Example integration:
-      /*
-      const response = await fetch(`${this.config.endpoint}/analyze-image`, {
-        method: 'POST',
+      const prompt = this.buildImageAnalysisPrompt(input);
+
+      const response = await fetch(`${this.config.endpoint}chat/completions`, {
+        method: "POST",
         headers: {
-          'Authorization': `Bearer ${this.config.apiKey}`,
-          'Content-Type': 'application/json',
+          Authorization: `Bearer ${this.config.apiKey}`,
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          model: this.config.model?.multimodal,
-          image_url: input.imageUrl,
-          analysis_type: input.analysisType,
-          metadata: input.metadata,
+          model: this.config.model?.text,
+          messages: [
+            {
+              role: "system",
+              content: `You are an expert laboratory scientist specializing in image analysis. \
+Analyze the provided lab image and return your analysis strictly as valid JSON in the following shape:
+{
+  "observations": [
+    { "type": "string", "description": "string", "confidence": <number 0-1>, "location": "string (optional)", "metadata": {} }
+  ],
+  "recommendations": [
+    { "action": "string", "priority": "LOW|MEDIUM|HIGH|CRITICAL", "rationale": "string", "estimatedTime": "string (optional)" }
+  ],
+  "next_steps": [
+    { "step": "string", "description": "string", "dependencies": ["string"] }
+  ],
+  "confidence": <number 0-1>
+}
+Return ONLY the raw JSON object. Do not wrap it in markdown code fences or include any other text.`,
+            },
+            {
+              role: "user",
+              content: [
+                {
+                  type: "text",
+                  text: prompt,
+                },
+                {
+                  type: "image_url",
+                  image_url: {
+                    url: input.imageUrl,
+                  },
+                },
+              ],
+            },
+          ],
         }),
       });
 
-      const data = await response.json();
-      
+      const res = await response.json();
+      console.log(res);
+      const raw = res.choices[0].message.content
+        .replace(/```json/g, "")
+        .replace(/```/g, "")
+        .trim();
+      const parsedRes = JSON.parse(raw);
+
       return {
-        observations: data.observations,
-        recommendations: data.recommendations,
-        nextSteps: data.next_steps,
-        confidence: data.confidence,
+        observations: parsedRes.observations,
+        recommendations: parsedRes.recommendations,
+        nextSteps: parsedRes.next_steps,
+        confidence: parsedRes.confidence,
         processingTime: Date.now() - startTime,
       };
-      */
-
-      // Mock response for development
-      return this.getMockImageAnalysis(input, startTime);
     } catch (error) {
       console.error("Amazon Nova image analysis error:", error);
-      throw new Error(`Failed to analyze image: ${error instanceof Error ? error.message : "Unknown error"}`);
+      throw new Error(
+        `Failed to analyze image: ${error instanceof Error ? error.message : "Unknown error"}`,
+      );
+    }
+  }
+
+  private buildImageAnalysisPrompt(input: ImageAnalysisInput): string {
+    const baseContext =
+      input.metadata && Object.keys(input.metadata).length > 0
+        ? `\nAdditional context: ${JSON.stringify(input.metadata)}`
+        : "";
+
+    switch (input.analysisType) {
+      case AnalysisType.GEL_IMAGE:
+        return `Analyze this gel electrophoresis image. Identify and evaluate:
+- Band positions and estimated molecular weights
+- Band intensity and uniformity across lanes
+- Presence of primer dimers or non-specific amplification bands
+- Overall PCR product quality and purity
+- Lane-by-lane assessment including any anomalies${baseContext}`;
+
+      case AnalysisType.WESTERN_BLOT:
+        return `Analyze this western blot image. Identify and evaluate:
+- Target protein bands and their apparent molecular weights
+- Background signal level and signal-to-noise ratio
+- Band intensity and consistency across sample lanes
+- Evidence of non-specific binding or cross-reactivity
+- Overall blot quality and transfer efficiency${baseContext}`;
+
+      case AnalysisType.CELL_MORPHOLOGY:
+        return `Analyze this cell microscopy image. Identify and evaluate:
+- Cell morphology and health indicators
+- Cell density and estimated confluence percentage
+- Presence of dead, stressed, or abnormal cells
+- Any signs of contamination (bacterial, fungal, or mycoplasma)
+- Overall culture condition and suitability for experimentation${baseContext}`;
+
+      default:
+        return `Analyze this laboratory image (analysis type: ${input.analysisType}). Provide detailed scientific observations, actionable recommendations, and suggested next steps.${baseContext}`;
     }
   }
 
@@ -115,17 +191,19 @@ export class AmazonNovaService implements IAIService {
     const startTime = Date.now();
 
     if (!this.isConfigured) {
-      throw new Error("Amazon Nova service is not configured. Please set AMAZON_NOVA_API_KEY in environment variables.");
+      throw new Error(
+        "Amazon Nova service is not configured. Please set AMAZON_NOVA_API_KEY in environment variables.",
+      );
     }
 
     try {
       // TODO: Replace this with actual Amazon Nova API call
       // Example integration:
       const response = await fetch(`${this.config.endpoint}chat/completions`, {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Authorization': `Bearer ${this.config.apiKey}`,
-          'Content-Type': 'application/json',
+          Authorization: `Bearer ${this.config.apiKey}`,
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           model: this.config.model?.text,
@@ -137,14 +215,17 @@ export class AmazonNovaService implements IAIService {
               role: "user",
               content: input.prompt,
             },
-          ]
+          ],
         }),
       });
 
       // console.log(await response.json())
-      const res = await response.json()
-      const parsedRes = JSON.parse(res.choices[0].message.content.replace('```json', '').replace('```', ''))
-      
+      const res = await response.json();
+      const parsedRes = JSON.parse(
+        res.choices[0].message.content
+          .replace("```json", "")
+          .replace("```", ""),
+      );
 
       return {
         observations: parsedRes.observations,
@@ -153,18 +234,63 @@ export class AmazonNovaService implements IAIService {
         confidence: parsedRes.confidence,
         processingTime: Date.now() - startTime,
       };
-      
 
       // Mock response for development
       return this.getMockTextAnalysis(input, startTime);
     } catch (error) {
       console.error("Amazon Nova text analysis error:", error);
-      throw new Error(`Failed to analyze text: ${error instanceof Error ? error.message : "Unknown error"}`);
+      throw new Error(
+        `Failed to analyze text: ${error instanceof Error ? error.message : "Unknown error"}`,
+      );
+    }
+  }
+
+  async chat(messages: ChatMessage[]): Promise<ChatResult> {
+    if (!this.isConfigured) {
+      throw new Error(
+        "Amazon Nova service is not configured. Please set AMAZON_NOVA_API_KEY in environment variables.",
+      );
+    }
+
+    try {
+      const response = await fetch(`${this.config.endpoint}chat/completions`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${this.config.apiKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: this.config.model?.text,
+          messages,
+        }),
+      });
+
+      const data = await response.json();
+      const choice = data.choices && data.choices[0] && data.choices[0].message;
+
+      if (!choice || typeof choice.content !== "string") {
+        throw new Error("Invalid response from AI chat service");
+      }
+
+      return {
+        message: {
+          role: choice.role,
+          content: choice.content,
+        },
+      };
+    } catch (error) {
+      console.error("Amazon Nova chat error:", error);
+      throw new Error(
+        `Failed to chat with AI service: ${error instanceof Error ? error.message : "Unknown error"}`,
+      );
     }
   }
 
   // Mock responses for development/testing
-  private getMockImageAnalysis(input: ImageAnalysisInput, startTime: number): ImageAnalysisResult {
+  private getMockImageAnalysis(
+    input: ImageAnalysisInput,
+    startTime: number,
+  ): ImageAnalysisResult {
     const processingTime = Date.now() - startTime;
 
     switch (input.analysisType) {
@@ -213,7 +339,7 @@ export class AmazonNovaService implements IAIService {
               dependencies: ["Purify PCR products"],
             },
           ],
-          confidence: 0.90,
+          confidence: 0.9,
           processingTime,
         };
 
@@ -222,7 +348,8 @@ export class AmazonNovaService implements IAIService {
           observations: [
             {
               type: "protein_detection",
-              description: "Target protein detected at expected molecular weight (55 kDa)",
+              description:
+                "Target protein detected at expected molecular weight (55 kDa)",
               confidence: 0.89,
             },
             {
@@ -296,7 +423,10 @@ export class AmazonNovaService implements IAIService {
     }
   }
 
-  private getMockTextAnalysis(input: TextAnalysisInput, startTime: number): TextAnalysisResult {
+  private getMockTextAnalysis(
+    input: TextAnalysisInput,
+    startTime: number,
+  ): TextAnalysisResult {
     const processingTime = Date.now() - startTime;
 
     switch (input.analysisType) {
@@ -310,7 +440,8 @@ export class AmazonNovaService implements IAIService {
             },
             {
               type: "root_cause",
-              description: "Template DNA may be degraded or concentration too low",
+              description:
+                "Template DNA may be degraded or concentration too low",
               confidence: 0.78,
             },
           ],
@@ -353,7 +484,8 @@ export class AmazonNovaService implements IAIService {
           observations: [
             {
               type: "efficiency_analysis",
-              description: "Current protocol can be optimized for time and reagent usage",
+              description:
+                "Current protocol can be optimized for time and reagent usage",
               confidence: 0.88,
             },
             {

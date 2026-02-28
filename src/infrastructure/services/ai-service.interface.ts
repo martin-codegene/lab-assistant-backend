@@ -88,3 +88,35 @@ export interface IAIService {
   // Get service name
   getServiceName(): string;
 }
+
+// Real-time AI Service - For streaming responses with multimodal input
+// Used for live guidance during experiments with video/audio input
+export interface IRealtimeAIService {
+  // Initialize session with system context
+  startSession(config: {
+    systemPrompt: string;
+    temperature?: number;
+    maxTokens?: number;
+  }): Promise<void>;
+
+  // Send visual input (base64 encoded frame)
+  sendFrame(frameBase64: string, mimeType?: string): Promise<void>;
+
+  // Send audio input (base64 encoded audio chunk)
+  sendAudioChunk(audioBase64: string): Promise<void>;
+
+  // Register callback for text stream chunks
+  onTextDelta(callback: (text: string) => void): void;
+
+  // Register callback for audio response chunks
+  onAudioChunk(callback: (chunk: Buffer) => void): void;
+
+  // Interrupt current response
+  interrupt(): Promise<void>;
+
+  // Close session and cleanup
+  close(): Promise<void>;
+
+  // Check if session is active
+  isActive(): boolean;
+}

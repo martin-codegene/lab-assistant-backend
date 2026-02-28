@@ -1,15 +1,27 @@
 import { Pagination, PaginatedResult, ApiResponse } from "@shared/types";
-import { IExperimentRepository, IProtocolRepository } from "@domain/repositories";
-import { ExperimentEntity, CreateExperimentInput, UpdateExperimentInput, ExperimentStatus } from "@domain/experiment";
+import {
+  IExperimentRepository,
+  IProtocolRepository,
+} from "@domain/repositories";
+import {
+  ExperimentEntity,
+  CreateExperimentInput,
+  UpdateExperimentInput,
+  ExperimentStatus,
+} from "@domain/experiment";
 import { ProtocolEntity } from "@domain/protocol";
+import { IRealtimeAIService } from "@infrastructure/services/ai-service.interface";
 
 export class ExperimentUseCases {
   constructor(
     private experimentRepository: IExperimentRepository,
-    private protocolRepository: IProtocolRepository
+    private protocolRepository: IProtocolRepository,
+    private realtimeAIService?: IRealtimeAIService,
   ) {}
 
-  async createExperiment(input: CreateExperimentInput): Promise<ApiResponse<ExperimentEntity>> {
+  async createExperiment(
+    input: CreateExperimentInput,
+  ): Promise<ApiResponse<ExperimentEntity>> {
     try {
       // Check if protocol exists
       const protocol = await this.protocolRepository.findById(input.protocolId);
@@ -22,7 +34,7 @@ export class ExperimentUseCases {
 
       // Create experiment entity
       const experiment = ExperimentEntity.create(input);
-      
+
       // Validate
       const validation = experiment.validate();
       if (!validation.isValid) {
@@ -46,7 +58,10 @@ export class ExperimentUseCases {
     } catch (error) {
       return {
         success: false,
-        error: error instanceof Error ? error.message : "Failed to create experiment",
+        error:
+          error instanceof Error
+            ? error.message
+            : "Failed to create experiment",
       };
     }
   }
@@ -68,12 +83,15 @@ export class ExperimentUseCases {
     } catch (error) {
       return {
         success: false,
-        error: error instanceof Error ? error.message : "Failed to get experiment",
+        error:
+          error instanceof Error ? error.message : "Failed to get experiment",
       };
     }
   }
 
-  async getExperimentWithAnalyses(id: string): Promise<ApiResponse<ExperimentEntity>> {
+  async getExperimentWithAnalyses(
+    id: string,
+  ): Promise<ApiResponse<ExperimentEntity>> {
     try {
       const experiment = await this.experimentRepository.findWithAnalyses(id);
       if (!experiment) {
@@ -90,12 +108,18 @@ export class ExperimentUseCases {
     } catch (error) {
       return {
         success: false,
-        error: error instanceof Error ? error.message : "Failed to get experiment with analyses",
+        error:
+          error instanceof Error
+            ? error.message
+            : "Failed to get experiment with analyses",
       };
     }
   }
 
-  async updateExperiment(id: string, input: UpdateExperimentInput): Promise<ApiResponse<ExperimentEntity>> {
+  async updateExperiment(
+    id: string,
+    input: UpdateExperimentInput,
+  ): Promise<ApiResponse<ExperimentEntity>> {
     try {
       const experiment = await this.experimentRepository.findById(id);
       if (!experiment) {
@@ -128,7 +152,10 @@ export class ExperimentUseCases {
     } catch (error) {
       return {
         success: false,
-        error: error instanceof Error ? error.message : "Failed to update experiment",
+        error:
+          error instanceof Error
+            ? error.message
+            : "Failed to update experiment",
       };
     }
   }
@@ -148,20 +175,38 @@ export class ExperimentUseCases {
       return {
         success: true,
         message: "Experiment deleted successfully",
+        data: undefined,
       };
     } catch (error) {
       return {
         success: false,
-        error: error instanceof Error ? error.message : "Failed to delete experiment",
+        error:
+          error instanceof Error
+            ? error.message
+            : "Failed to delete experiment",
       };
     }
   }
 
-  async listUserExperiments(userId: string, pagination?: Pagination, filters?: { status?: ExperimentStatus; protocolId?: string; labId?: string }): Promise<ApiResponse<PaginatedResult<ExperimentEntity>>> {
+  async listUserExperiments(
+    userId: string,
+    pagination?: Pagination,
+    filters?: {
+      status?: ExperimentStatus;
+      protocolId?: string;
+      labId?: string;
+    },
+  ): Promise<ApiResponse<PaginatedResult<ExperimentEntity>>> {
     try {
-      const result = await this.experimentRepository.findByUser(userId, pagination, filters);
+      const result = await this.experimentRepository.findByUser(
+        userId,
+        pagination,
+        filters,
+      );
 
-      const experimentEntities = result.data.map(experiment => new ExperimentEntity(experiment));
+      const experimentEntities = result.data.map(
+        (experiment) => new ExperimentEntity(experiment),
+      );
 
       return {
         success: true,
@@ -173,16 +218,27 @@ export class ExperimentUseCases {
     } catch (error) {
       return {
         success: false,
-        error: error instanceof Error ? error.message : "Failed to list user experiments",
+        error:
+          error instanceof Error
+            ? error.message
+            : "Failed to list user experiments",
       };
     }
   }
 
-  async listProtocolExperiments(protocolId: string, pagination?: Pagination): Promise<ApiResponse<PaginatedResult<ExperimentEntity>>> {
+  async listProtocolExperiments(
+    protocolId: string,
+    pagination?: Pagination,
+  ): Promise<ApiResponse<PaginatedResult<ExperimentEntity>>> {
     try {
-      const result = await this.experimentRepository.findByProtocol(protocolId, pagination);
+      const result = await this.experimentRepository.findByProtocol(
+        protocolId,
+        pagination,
+      );
 
-      const experimentEntities = result.data.map(experiment => new ExperimentEntity(experiment));
+      const experimentEntities = result.data.map(
+        (experiment) => new ExperimentEntity(experiment),
+      );
 
       return {
         success: true,
@@ -194,16 +250,29 @@ export class ExperimentUseCases {
     } catch (error) {
       return {
         success: false,
-        error: error instanceof Error ? error.message : "Failed to list protocol experiments",
+        error:
+          error instanceof Error
+            ? error.message
+            : "Failed to list protocol experiments",
       };
     }
   }
 
-  async listLabExperiments(labId: string, pagination?: Pagination, filters?: { status?: ExperimentStatus }): Promise<ApiResponse<PaginatedResult<ExperimentEntity>>> {
+  async listLabExperiments(
+    labId: string,
+    pagination?: Pagination,
+    filters?: { status?: ExperimentStatus },
+  ): Promise<ApiResponse<PaginatedResult<ExperimentEntity>>> {
     try {
-      const result = await this.experimentRepository.findByLab(labId, pagination, filters);
+      const result = await this.experimentRepository.findByLab(
+        labId,
+        pagination,
+        filters,
+      );
 
-      const experimentEntities = result.data.map(experiment => new ExperimentEntity(experiment));
+      const experimentEntities = result.data.map(
+        (experiment) => new ExperimentEntity(experiment),
+      );
 
       return {
         success: true,
@@ -215,7 +284,10 @@ export class ExperimentUseCases {
     } catch (error) {
       return {
         success: false,
-        error: error instanceof Error ? error.message : "Failed to list lab experiments",
+        error:
+          error instanceof Error
+            ? error.message
+            : "Failed to list lab experiments",
       };
     }
   }
@@ -234,7 +306,10 @@ export class ExperimentUseCases {
       experimentEntity.start();
 
       // Update status in repository
-      await this.experimentRepository.updateStatus(id, ExperimentStatus.IN_PROGRESS);
+      await this.experimentRepository.updateStatus(
+        id,
+        ExperimentStatus.IN_PROGRESS,
+      );
 
       return {
         success: true,
@@ -244,12 +319,17 @@ export class ExperimentUseCases {
     } catch (error) {
       return {
         success: false,
-        error: error instanceof Error ? error.message : "Failed to start experiment",
+        error:
+          error instanceof Error ? error.message : "Failed to start experiment",
       };
     }
   }
 
-  async completeExperiment(id: string, success: boolean, conclusion?: string): Promise<ApiResponse<ExperimentEntity>> {
+  async completeExperiment(
+    id: string,
+    success: boolean,
+    conclusion?: string,
+  ): Promise<ApiResponse<ExperimentEntity>> {
     try {
       const experiment = await this.experimentRepository.findById(id);
       if (!experiment) {
@@ -273,12 +353,18 @@ export class ExperimentUseCases {
     } catch (error) {
       return {
         success: false,
-        error: error instanceof Error ? error.message : "Failed to complete experiment",
+        error:
+          error instanceof Error
+            ? error.message
+            : "Failed to complete experiment",
       };
     }
   }
 
-  async failExperiment(id: string, reason?: string): Promise<ApiResponse<ExperimentEntity>> {
+  async failExperiment(
+    id: string,
+    reason?: string,
+  ): Promise<ApiResponse<ExperimentEntity>> {
     try {
       const experiment = await this.experimentRepository.findById(id);
       if (!experiment) {
@@ -302,12 +388,18 @@ export class ExperimentUseCases {
     } catch (error) {
       return {
         success: false,
-        error: error instanceof Error ? error.message : "Failed to mark experiment as failed",
+        error:
+          error instanceof Error
+            ? error.message
+            : "Failed to mark experiment as failed",
       };
     }
   }
 
-  async cancelExperiment(id: string, reason?: string): Promise<ApiResponse<ExperimentEntity>> {
+  async cancelExperiment(
+    id: string,
+    reason?: string,
+  ): Promise<ApiResponse<ExperimentEntity>> {
     try {
       const experiment = await this.experimentRepository.findById(id);
       if (!experiment) {
@@ -331,16 +423,29 @@ export class ExperimentUseCases {
     } catch (error) {
       return {
         success: false,
-        error: error instanceof Error ? error.message : "Failed to cancel experiment",
+        error:
+          error instanceof Error
+            ? error.message
+            : "Failed to cancel experiment",
       };
     }
   }
 
-  async searchExperiments(query: string, userId: string, pagination?: Pagination): Promise<ApiResponse<PaginatedResult<ExperimentEntity>>> {
+  async searchExperiments(
+    query: string,
+    userId: string,
+    pagination?: Pagination,
+  ): Promise<ApiResponse<PaginatedResult<ExperimentEntity>>> {
     try {
-      const result = await this.experimentRepository.search(query, userId, pagination);
+      const result = await this.experimentRepository.search(
+        query,
+        userId,
+        pagination,
+      );
 
-      const experimentEntities = result.data.map(experiment => new ExperimentEntity(experiment));
+      const experimentEntities = result.data.map(
+        (experiment) => new ExperimentEntity(experiment),
+      );
 
       return {
         success: true,
@@ -352,7 +457,181 @@ export class ExperimentUseCases {
     } catch (error) {
       return {
         success: false,
-        error: error instanceof Error ? error.message : "Failed to search experiments",
+        error:
+          error instanceof Error
+            ? error.message
+            : "Failed to search experiments",
+      };
+    }
+  }
+
+  async streamExperimentGuidance(
+    experimentId: string,
+    protocolId: string,
+    systemContext?: string,
+  ): Promise<ApiResponse<{ sessionActive: boolean }>> {
+    try {
+      if (!this.realtimeAIService) {
+        return {
+          success: false,
+          error: "Real-time AI service not configured",
+        };
+      }
+
+      // Verify experiment exists
+      const experiment = await this.experimentRepository.findById(experimentId);
+      if (!experiment) {
+        return {
+          success: false,
+          error: "Experiment not found",
+        };
+      }
+
+      // Verify protocol exists and get details
+      const protocol = await this.protocolRepository.findById(protocolId);
+      if (!protocol) {
+        return {
+          success: false,
+          error: "Protocol not found",
+        };
+      }
+
+      // Start real-time session with protocol context
+      const systemPrompt =
+        systemContext ||
+        `You are an experienced lab assistant guiding an experiment. Follow the protocol steps strictly:
+
+Protocol: ${protocol.name}
+Description: ${protocol.description}
+
+Provide real-time guidance based on the lab video/audio feed. Be concise and precise. Alert immediately if you observe any safety concerns or deviations from the protocol.`;
+
+      await this.realtimeAIService.startSession({
+        systemPrompt,
+        temperature: 0.5, // Lower temperature for precision
+        maxTokens: 500, // Shorter responses for real-time interaction
+      });
+
+      return {
+        success: true,
+        data: { sessionActive: this.realtimeAIService.isActive() },
+        message: "Real-time guidance session started",
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error:
+          error instanceof Error
+            ? error.message
+            : "Failed to start guidance session",
+      };
+    }
+  }
+
+  // Register callback to handle incoming guidance text
+  onGuidanceText(callback: (text: string) => void): void {
+    if (this.realtimeAIService) {
+      this.realtimeAIService.onTextDelta(callback);
+    }
+  }
+
+  // Register callback to handle incoming guidance audio
+  onGuidanceAudio(callback: (chunk: Buffer) => void): void {
+    if (this.realtimeAIService) {
+      this.realtimeAIService.onAudioChunk(callback);
+    }
+  }
+
+  // Send a video frame during live guidance session
+  async sendLiveFrame(
+    frameBase64: string,
+    mimeType?: string,
+  ): Promise<ApiResponse<void>> {
+    try {
+      if (!this.realtimeAIService?.isActive()) {
+        return {
+          success: false,
+          error: "No active guidance session",
+        };
+      }
+
+      await this.realtimeAIService.sendFrame(frameBase64, mimeType);
+
+      return {
+        success: true,
+        data: undefined,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error:
+          error instanceof Error ? error.message : "Failed to send frame",
+      };
+    }
+  }
+
+  // Send audio input during live guidance session
+  async sendLiveAudio(audioBase64: string): Promise<ApiResponse<void>> {
+    try {
+      if (!this.realtimeAIService?.isActive()) {
+        return {
+          success: false,
+          error: "No active guidance session",
+        };
+      }
+
+      await this.realtimeAIService.sendAudioChunk(audioBase64);
+
+      return {
+        success: true,
+        data: undefined,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error:
+          error instanceof Error ? error.message : "Failed to send audio",
+      };
+    }
+  }
+
+  // Interrupt the AI's current response
+  async interruptGuidance(): Promise<ApiResponse<void>> {
+    try {
+      if (this.realtimeAIService?.isActive()) {
+        await this.realtimeAIService.interrupt();
+      }
+
+      return {
+        success: true,
+        data: undefined,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error:
+          error instanceof Error ? error.message : "Failed to interrupt",
+      };
+    }
+  }
+
+  // End the guidance session
+  async endGuidanceSession(): Promise<ApiResponse<void>> {
+    try {
+      if (this.realtimeAIService?.isActive()) {
+        await this.realtimeAIService.close();
+      }
+
+      return {
+        success: true,
+        message: "Guidance session closed",
+        data: undefined
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error:
+          error instanceof Error ? error.message : "Failed to close session",
       };
     }
   }

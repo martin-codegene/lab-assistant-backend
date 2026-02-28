@@ -10,22 +10,28 @@ export interface AuthContext extends Context {
 }
 
 export async function authMiddleware(c: AuthContext, next: Next) {
+  // Try Authorization header first, then query param (for WebSocket connections)
+  let token: string | undefined;
+
   const authHeader = c.req.header('Authorization');
-  
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+  if (authHeader?.startsWith('Bearer ')) {
+    token = authHeader.substring(7);
+  } else {
+    token = c.req.query('token') ?? undefined;
+  }
+
+  if (!token) {
     return c.json({ error: 'No token provided' }, 401);
   }
 
-  const token = authHeader.substring(7); // Remove 'Bearer ' prefix
   const payload = JwtService.verifyToken(token);
 
   if (!payload) {
     return c.json({ error: 'Invalid or expired token' }, 401);
   }
 
-  // Attach user info to context
-  c.set('user', {...payload, id: payload.userId})
-  
+  c.set('user', { ...payload, id: payload.userId });
+
   await next();
 }
 

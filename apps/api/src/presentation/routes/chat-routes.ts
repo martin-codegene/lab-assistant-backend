@@ -1,6 +1,6 @@
 import { Hono } from "hono";
-import { AmazonNovaService } from "@infrastructure/services/amazon-nova-service";
-import { ChatMessage } from "@infrastructure/services/ai-service.interface";
+import { getAIService } from "@infrastructure/ai/ai-provider.factory";
+import { ChatMessage } from "@infrastructure/ai/ai-service.interface";
 import { authMiddleware, AuthContext } from "@shared/middleware";
 import { ChatUseCases } from "@application/use-cases/chat-use-cases";
 import { PrismaChatRepository } from "@infrastructure/repositories/prisma-chat-repository";
@@ -10,7 +10,7 @@ import { CreateChatSessionInput, UpdateChatSessionInput } from "@domain/chat";
 // Bootstrap
 // ---------------------------------------------------------------------------
 
-const aiService = new AmazonNovaService();
+const aiService = getAIService();
 const chatRepository = new PrismaChatRepository();
 const chatUseCases = new ChatUseCases(chatRepository, aiService);
 

@@ -10,7 +10,7 @@ import {
   ExperimentStatus,
 } from "@domain/experiment";
 import { ProtocolEntity } from "@domain/protocol";
-import { IRealtimeAIService } from "@infrastructure/services/ai-service.interface";
+import { IRealtimeAIService } from "@infrastructure/ai/ai-service.interface";
 
 export class ExperimentUseCases {
   constructor(

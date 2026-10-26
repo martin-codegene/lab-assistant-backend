@@ -1,12 +1,13 @@
 // WebSocket Handler for Real-Time Experiment Guidance
 // Bridges WebSocket connections with real-time AI streaming via use cases
-// Handles frame/audio input → use cases → Nova service → WebSocket output
+// Handles frame/audio input → use cases → realtime AI provider → WebSocket output
 
 import { HonoRequest } from "hono";
 import { ExperimentUseCases } from "@application/use-cases/experiment-use-cases";
 import { PrismaExperimentRepository } from "@infrastructure/repositories/prisma-experiment-repository";
 import { PrismaProtocolRepository } from "@infrastructure/repositories/prisma-protocol-repository";
-import { NovaAIService } from "@infrastructure/services/nova-ai.service";
+import { createRealtimeAIService } from "@infrastructure/ai/ai-provider.factory";
+import { IRealtimeAIService } from "@infrastructure/ai/ai-service.interface";
 
 // Session state for tracking active WebSocket connections
 interface WebSocketSession {
@@ -56,7 +57,7 @@ export interface WSResponse {
  * ExperimentWebSocketHandler
  *
  * Manages real-time experiment guidance via WebSocket.
- * Orchestrates the flow: WebSocket → Use Cases → Nova Service
+ * Orchestrates the flow: WebSocket → Use Cases → Realtime AI provider
  *
  * Usage:
  * const handler = new ExperimentWebSocketHandler()
@@ -67,14 +68,14 @@ export interface WSResponse {
 export class ExperimentWebSocketHandler {
   private sessions = new Map<string, WebSocketSession>();
   private experimentUseCases: ExperimentUseCases;
-  private realtimeAIService: NovaAIService;
+  private realtimeAIService: IRealtimeAIService;
   private activeWs: WebSocket | any = null
 
   constructor() {
     // Initialize repositories and services
     const experimentRepository = new PrismaExperimentRepository();
     const protocolRepository = new PrismaProtocolRepository();
-    this.realtimeAIService = new NovaAIService("us-east-1");
+    this.realtimeAIService = createRealtimeAIService();
 
     // Inject real-time AI service into use cases
     this.experimentUseCases = new ExperimentUseCases(

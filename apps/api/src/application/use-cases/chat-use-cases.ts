@@ -1,6 +1,6 @@
 import { Pagination, PaginatedResult, ApiResponse } from "@shared/types";
 import { IChatSessionRepository } from "@domain/repositories";
-import { IAIService, ChatMessage } from "@infrastructure/services/ai-service.interface";
+import { IAIService, ChatMessage } from "@infrastructure/ai/ai-service.interface";
 import {
   ChatSessionEntity,
   ChatSessionMessageEntity,

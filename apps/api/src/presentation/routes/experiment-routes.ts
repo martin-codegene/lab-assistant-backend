@@ -3,7 +3,7 @@ import { stream } from "hono/streaming";
 import { ExperimentUseCases } from "@application/use-cases/experiment-use-cases";
 import { PrismaExperimentRepository } from "@infrastructure/repositories/prisma-experiment-repository";
 import { PrismaProtocolRepository } from "@infrastructure/repositories/prisma-protocol-repository";
-import { NovaAIService } from "@infrastructure/services/nova-ai.service";
+import { createRealtimeAIService } from "@infrastructure/ai/ai-provider.factory";
 import { experimentWebSocketHandler } from "@infrastructure/websocket/experiment.socket";
 import {
   CreateExperimentInput,
@@ -17,7 +17,7 @@ import { upgradeWebSocket } from "hono/bun";
 
 const experimentRepository = new PrismaExperimentRepository();
 const protocolRepository = new PrismaProtocolRepository();
-const realtimeAIService = new NovaAIService("us-east-1");
+const realtimeAIService = createRealtimeAIService();
 const experimentUseCases = new ExperimentUseCases(
   experimentRepository,
   protocolRepository,

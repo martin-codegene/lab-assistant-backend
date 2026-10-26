@@ -1,5 +1,6 @@
 // AI Service Interface - Abstraction for AI providers
-// This allows switching between different AI services (Amazon Nova, OpenAI, etc.)
+// Every provider adapter implements these interfaces; the active one is
+// selected by ai-provider.factory.ts (see AI_PROVIDERS.md).
 
 import { AnalysisType } from "@domain/analysis";
 
@@ -119,4 +120,26 @@ export interface IRealtimeAIService {
 
   // Check if session is active
   isActive(): boolean;
+}
+
+// Text-to-speech - Turns streamed guidance text into audio for the client.
+// Kept separate from the model provider so either side can be swapped alone.
+export interface ITextToSpeech {
+  // Buffer a text delta; emits audio once a full sentence is available
+  accumulateAndSpeak(
+    textDelta: string,
+    onAudioChunk: (chunk: Buffer) => void,
+  ): Promise<void>;
+
+  // Drop any buffered text
+  reset(): void;
+}
+
+// AI Provider - One pluggable backend (Meta, mock, …). Register new ones in
+// ai-provider.factory.ts; select with AI_PROVIDER / AI_REALTIME_PROVIDER.
+export interface AIProvider {
+  name: string;
+  createAIService(): IAIService;
+  // Called once per realtime consumer — sessions are stateful
+  createRealtimeAIService(tts?: ITextToSpeech): IRealtimeAIService;
 }

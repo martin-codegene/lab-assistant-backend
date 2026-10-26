@@ -2,13 +2,13 @@ import { Hono } from 'hono'
 import { AnalysisUseCases } from '@application/use-cases/analysis-use-cases'
 import { PrismaAnalysisRepository } from '@infrastructure/repositories/prisma-analysis-repository'
 import { PrismaExperimentRepository } from '@infrastructure/repositories/prisma-experiment-repository'
-import { AmazonNovaService } from '@infrastructure/services/amazon-nova-service'
+import { getAIService } from '@infrastructure/ai/ai-provider.factory'
 import { CreateAnalysisInput, UpdateAnalysisInput, AnalysisType } from '@domain/analysis'
 import { authMiddleware, AuthContext } from '@shared/middleware'
 
 const analysisRepository = new PrismaAnalysisRepository()
 const experimentRepository = new PrismaExperimentRepository()
-const aiService = new AmazonNovaService() // Amazon Nova AI Service
+const aiService = getAIService()
 const analysisUseCases = new AnalysisUseCases(analysisRepository, experimentRepository, aiService)
 
 export const analysisRoutes = new Hono()

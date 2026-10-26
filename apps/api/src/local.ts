@@ -46,7 +46,7 @@ app.onError((err, c) => {
   return c.json({ error: "Internal server error" }, 500);
 });
 
-const port = 3000;
+const port = Number(process.env.PORT ?? 3000);
 
 export default {
   fetch: app.fetch, // ✅ must be app.fetch, not app

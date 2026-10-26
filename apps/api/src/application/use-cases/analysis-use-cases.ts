@@ -10,7 +10,7 @@ import {
   AnalysisNextStep,
 } from "@domain/analysis";
 import { Pagination, PaginatedResult, Result } from "@shared/types";
-import { IAIService } from "@infrastructure/services/ai-service.interface";
+import { IAIService } from "@infrastructure/ai/ai-service.interface";
 
 export class AnalysisUseCases {
   constructor(

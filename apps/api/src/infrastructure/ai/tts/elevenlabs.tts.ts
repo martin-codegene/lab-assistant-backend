@@ -1,16 +1,27 @@
-// src/infrastructure/services/tts.service.ts
+// src/infrastructure/ai/tts/elevenlabs.tts.ts
 import { ElevenLabsClient } from "elevenlabs";
+import { ITextToSpeech } from "../ai-service.interface";
 
-export class TTSService {
+/**
+ * ElevenLabsTextToSpeech
+ * ----------------------
+ * Required env vars:
+ *   ELEVENLABS_API_KEY
+ *
+ * Optional:
+ *   ELEVENLABS_VOICE_ID – defaults to "George" (clear, professional)
+ */
+export class ElevenLabsTextToSpeech implements ITextToSpeech {
   private client: ElevenLabsClient;
-  private voiceId = "JBFqnCBsd6RMkjVDRZzb"; // "George" — clear, professional
+  private voiceId: string;
   private buffer = "";
-  private flushTimer: any = null;
 
   constructor() {
-    this.client = new ElevenLabsClient({
-      apiKey: 'sk_1a3ab9e27d274748b13878037ba91fc740b6e41ab160918d',
-    });
+    const apiKey = process.env.ELEVENLABS_API_KEY;
+    if (!apiKey) throw new Error("ELEVENLABS_API_KEY is not set");
+
+    this.client = new ElevenLabsClient({ apiKey });
+    this.voiceId = process.env.ELEVENLABS_VOICE_ID ?? "JBFqnCBsd6RMkjVDRZzb";
   }
 
   // Accumulate text deltas and flush when sentence is complete

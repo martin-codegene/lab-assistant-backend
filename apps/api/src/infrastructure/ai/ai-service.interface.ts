@@ -135,6 +135,11 @@ export interface ITextToSpeech {
   reset(): void;
 }
 
+// Speech-to-text - Turns a recorded clip (any common audio format) into text.
+export interface ISpeechToText {
+  transcribe(audio: Blob): Promise<{ text: string }>;
+}
+
 // AI Provider - One pluggable backend (Meta, mock, …). Register new ones in
 // ai-provider.factory.ts; select with AI_PROVIDER / AI_REALTIME_PROVIDER.
 export interface AIProvider {

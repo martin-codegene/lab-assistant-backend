@@ -9,6 +9,7 @@ import { analysisRoutes } from "@presentation/routes/analysis-routes";
 import { chatRoutes } from "@presentation/routes/chat-routes";
 import { attachmentRoutes } from "@presentation/routes/attachment-routes";
 import { uploadRoutes } from "@presentation/routes/upload-routes";
+import { transcribeRoutes } from "@presentation/routes/transcribe-routes";
 
 const app = new Hono();
 
@@ -34,6 +35,7 @@ app.route("/api/analyses", analysisRoutes);
 app.route("/api/chat", chatRoutes);
 app.route("/api/attachments", attachmentRoutes);
 app.route("/api/uploads", uploadRoutes);
+app.route("/api/transcribe", transcribeRoutes);
 
 // 404 handler
 app.notFound((c) => {

@@ -1,0 +1,11 @@
+**/node_modules
+**/.env
+**/.env.*
+!**/.env.example
+.git
+**/dist
+**/*.log
+
+# Only the mobile manifest is needed (the workspace lockfile references it)
+apps/mobile/*
+!apps/mobile/package.json

@@ -14,6 +14,15 @@ Text-to-speech for live guidance is a separate adapter, because Meta's API has n
 | ElevenLabs | `elevenlabs` (the default when `ELEVENLABS_API_KEY` is set) |
 | Off | `none` |
 
+Speech-to-text for voice notes (`POST /api/transcribe`) is also its own adapter:
+
+| STT | `STT_PROVIDER` value |
+|---|---|
+| Meta (`muse-voice-transcribe-1.0`) | `meta` (the default) |
+| Mock | `mock` (the default when `AI_PROVIDER=mock`) |
+
+Meta only accepts mono 16-bit PCM WAV. The backend converts every upload (m4a, aac, webm, 3gp, wav) with **ffmpeg** first, so ffmpeg must be on `PATH`. The Docker image installs it; locally, use `brew install ffmpeg`.
+
 ## Configuration
 
 ```bash
@@ -45,6 +54,7 @@ ai-provider.factory.ts ── reads AI_PROVIDER, AI_REALTIME_PROVIDER, TTS_PROVI
         ├── providers/meta.provider.ts ──► OpenAICompatibleAIService
         │                                  OpenAICompatibleRealtimeService
         ├── providers/mock.provider.ts
+        ├── stt/meta.stt.ts ──► audio/to-wav.ts (ffmpeg)
         └── tts/elevenlabs.tts.ts
 ```
 
@@ -98,5 +108,5 @@ const providers: Record<string, AIProvider> = {
 
 ## Known limitations
 
-- **Audio input.** `sendAudioChunk` logs a warning and drops the chunk. The mobile app doesn't send audio yet. Meta's speech-to-text API (`muse-voice-transcribe-1.0`) only accepts 16-bit PCM WAV, so the app would need to convert its recordings before a transcription adapter could use them.
+- **Audio input during live guidance.** `sendAudioChunk` logs a warning and drops the chunk. (Recorded voice notes work through `POST /api/transcribe`.) The mobile app doesn't send audio yet. Meta's speech-to-text API (`muse-voice-transcribe-1.0`) only accepts 16-bit PCM WAV, so the app would need to convert its recordings before a transcription adapter could use them.
 - **One shared live session per handler.** Each realtime service holds one session. The WebSocket handler is a single shared instance, so two users running live guidance at the same time share a session. This was already the case before the adapter refactor.

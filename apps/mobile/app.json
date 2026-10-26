@@ -11,8 +11,10 @@
     "ios": {
       "supportsTablet": true,
       "infoPlist": {
-        "NSMicrophoneUsageDescription": "Nova Lab needs microphone access to let you send voice messages."
-      }
+        "NSMicrophoneUsageDescription": "Nova Lab needs microphone access to let you send voice messages.",
+        "ITSAppUsesNonExemptEncryption": false
+      },
+      "bundleIdentifier": "metinalabs.labaiassistant"
     },
     "android": {
       "adaptiveIcon": {
@@ -22,7 +24,14 @@
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
       "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "permissions": [
+        "android.permission.RECORD_AUDIO",
+        "android.permission.MODIFY_AUDIO_SETTINGS",
+        "android.permission.FOREGROUND_SERVICE",
+        "android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK"
+      ],
+      "package": "metinalabs.labaiassistant"
     },
     "web": {
       "output": "static",
@@ -50,6 +59,13 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
-    }
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "e239287c-5267-4825-9609-5f424ffbcca6"
+      }
+    },
+    "owner": "martintembo1"
   }
 }

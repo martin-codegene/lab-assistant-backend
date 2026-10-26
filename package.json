@@ -1,6 +1,7 @@
 {
   "name": "lab-assistant",
   "private": true,
+  "packageManager": "bun@1.4.4",
   "workspaces": [
     "apps/*",
     "packages/*"
@@ -13,6 +14,12 @@
     "build:api": "bun --filter @lab-assistant/api build",
     "deploy:api": "bun --filter @lab-assistant/api deploy",
     "lint:mobile": "bun --filter @lab-assistant/mobile lint",
+    "eas": "bun run --cwd apps/mobile eas",
+    "eas:build:dev": "bun run --cwd apps/mobile build:dev",
+    "eas:build:sim": "bun run --cwd apps/mobile build:dev:sim",
+    "eas:build:preview": "bun run --cwd apps/mobile build:preview",
+    "eas:build:prod": "bun run --cwd apps/mobile build:prod",
+    "eas:submit": "bun run --cwd apps/mobile submit",
     "db:up": "docker compose up -d",
     "db:down": "docker compose down"
   },

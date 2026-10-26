@@ -13,29 +13,35 @@ Tick each box when the item is done and merged. Work through the phases in order
 These are blockers. Without them the demo breaks, or the project still depends on another provider.
 
 ### 1.1 Remove Amazon Nova from the mobile app
-- [ ] Add a `POST /api/transcribe` endpoint that uses Meta speech-to-text (`muse-voice-transcribe-1.0`, `POST https://api.meta.ai/v1/asr/transcribe`).
+- [x] Add a `POST /api/transcribe` endpoint that uses Meta speech-to-text (`muse-voice-transcribe-1.0`, `POST https://api.meta.ai/v1/asr/transcribe`).
   - The endpoint only accepts mono 16-bit PCM WAV at 16 or 24 kHz, up to 32 MB and 10 minutes. The app records m4a by default, so either record WAV in the app or convert on the server.
-- [ ] Replace `transcribeWithNova()` in `apps/mobile/screens/analyze-screen.tsx` with a call to the new endpoint.
-- [ ] Delete `EXPO_PUBLIC_NOVA_API_KEY` from the app and `.env.example`. Every `EXPO_PUBLIC_*` value is bundled into the app, so AI keys must never be set there.
+  - Done: the server converts any upload with ffmpeg. The headers now read "Lab AI".
+- [x] Replace `transcribeWithNova()` in `apps/mobile/screens/analyze-screen.tsx` with a call to the new endpoint.
+- [x] Delete `EXPO_PUBLIC_NOVA_API_KEY` from the app and `.env.example`. Every `EXPO_PUBLIC_*` value is bundled into the app, so AI keys must never be set there.
 
 ### 1.2 Rebrand away from "Nova"
-- [ ] Replace the "Nova AI" headers in `app/(tabs)/index.tsx` and `screens/analyze-screen.tsx`.
-- [ ] Update the iOS microphone permission text in `app.json`. It currently says "Nova Lab needs microphone access…".
+- [x] Replace the "Nova AI" headers in `app/(tabs)/index.tsx` and `screens/analyze-screen.tsx`.
+- [x] Update the iOS microphone permission text in `app.json`. It currently says "Nova Lab needs microphone access…".
 - [ ] Decide on the product name and use it in the app name, the README and the demo.
 
 ### 1.3 Fix database migrations
-- [ ] Create a migration for `ChatSession`, `ChatSessionMessage` and `Uploads`. They are in `schema.prisma` but missing from `prisma/migrations`, so a fresh database crashes chat and uploads.
-- [ ] Confirm that `prisma migrate deploy` on an empty database matches the schema.
+- [x] Create a migration for `ChatSession`, `ChatSessionMessage` and `Uploads`. They are in `schema.prisma` but missing from `prisma/migrations`, so a fresh database crashes chat and uploads.
+- [x] Confirm that `prisma migrate deploy` on an empty database matches the schema.
+  - Done in `20261026120000_sync_schema`. The schema had also drifted beyond those three tables: `User.password`, `department`, `instituition`, the `STUDENT` role and `_ProtocolTags`.
+  - **Existing databases that were built with `prisma db push`:** mark both migrations as already applied instead of running them:
+    `bunx prisma migrate resolve --applied 20250223061300_init` and `bunx prisma migrate resolve --applied 20261026120000_sync_schema`
 
 ### 1.4 Configure the mobile app per environment
-- [ ] Read `BASE_URL` and `WS_URL` in `apps/mobile/env.ts` from `EXPO_PUBLIC_API_BASE_URL` instead of the hard-coded ngrok URL.
+- [x] Read `BASE_URL` and `WS_URL` in `apps/mobile/env.ts` from `EXPO_PUBLIC_API_BASE_URL` instead of the hard-coded ngrok URL.
 - [ ] Set the production URL per EAS profile in `eas.json` `env`.
 
 ### 1.5 Deploy the API somewhere that supports WebSockets
 - [ ] Choose a host: Fly.io, Railway or Render. AWS Lambda (the current `deploy` script) can't hold WebSocket connections, and live guidance needs them.
-- [ ] Add a Dockerfile for `apps/api`.
+- [x] Add a Dockerfile for `apps/api`. Build it from the repo root with `docker build -f apps/api/Dockerfile .`. It installs ffmpeg and runs migrations on start, and has been tested against an empty database.
 - [ ] Set up hosted Postgres and run the migrations.
 - [ ] Set the environment variables `DATABASE_URL`, `JWT_SECRET`, `MODEL_API_KEY`, `ELEVENLABS_API_KEY`, and the storage variables.
+  - `JWT_SECRET` is **required** in production. Without it, the code falls back to a hard-coded default secret.
+  - Use `STORAGE_DRIVER=aws` with an S3 bucket. Container disks are temporary, so the default local storage loses uploads on every redeploy.
 - [ ] Smoke test: health check, login, chat, gel analysis and a live guidance session from a phone.
 
 ### 1.6 Verify against the real Meta API
@@ -43,8 +49,9 @@ These are blockers. Without them the demo breaks, or the project still depends o
 - [ ] Check that Meta accepts the `json_schema` structured output used for analysis.
 
 ### 1.7 Security and housekeeping
+- [ ] **Revoke the Amazon Nova API key.** `apps/mobile/.env` with `EXPO_PUBLIC_NOVA_API_KEY` was committed to the `lab-assistant-app` repo, and every installed build also contains it. Delete the variable from your local `apps/mobile/.env`.
 - [ ] **Revoke the ElevenLabs API key.** It was hard-coded and pushed to `master`. Put the new key in `ELEVENLABS_API_KEY`.
-- [ ] Commit the EAS setup (`eas.json`, scripts, `app.json` project ID, Bun 1.4.4 pin).
+- [x] Commit the EAS setup (`eas.json`, scripts, `app.json` project ID, Bun 1.4.4 pin).
 - [ ] Merge `feat/meta-ai-adapters` into `master`.
 
 ---

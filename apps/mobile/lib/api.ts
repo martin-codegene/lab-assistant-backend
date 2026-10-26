@@ -1,5 +1,6 @@
 import axios, { AxiosError, AxiosInstance } from "axios";
 import * as SecureStore from "expo-secure-store";
+import { API_CONFIG } from "@/env";
 
 // Types based on API documentation
 export type UserRole = "RESEARCHER" | "LAB_MANAGER" | "ADMIN";
@@ -348,12 +349,6 @@ export interface ProtocolOptimizationRequest {
 const STORAGE_KEYS = {
   TOKEN: "lab_app_token",
   USER: "lab_app_user",
-} as const;
-
-// API configuration
-const API_CONFIG = {
-  BASE_URL: "https://popularly-penicillate-earnest.ngrok-free.dev/api",
-  // TIMEOUT: 10000,
 } as const;
 
 class ApiService {
@@ -1076,6 +1071,40 @@ class ApiService {
       const json = await response.json();
       if (!response.ok) {
         throw new Error(json.error ?? `Upload failed (${response.status})`);
+      }
+      return json;
+    } catch (error) {
+      throw this.handleError(error);
+    }
+  }
+
+  // ── Transcription ────────────────────────────────────────────────────────
+
+  /**
+   * Transcribe a recorded voice clip on the backend (Meta speech-to-text).
+   * Any format expo-audio records (m4a, aac, 3gp, wav) is accepted.
+   */
+  async transcribeAudio(audioUri: string): Promise<ApiResponse<{ text: string }>> {
+    try {
+      const formData = new FormData();
+      formData.append("audio", {
+        uri: audioUri,
+        name: "recording.m4a",
+        type: "audio/m4a",
+      } as any);
+
+      const response = await fetch(`${API_CONFIG.BASE_URL}/transcribe`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${this.token}`,
+          // ⚠️ Do NOT set Content-Type here — let fetch add it with the boundary
+        },
+        body: formData,
+      });
+
+      const json = await response.json();
+      if (!response.ok) {
+        throw new Error(json.error ?? `Transcription failed (${response.status})`);
       }
       return json;
     } catch (error) {

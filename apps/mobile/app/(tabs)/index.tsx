@@ -156,7 +156,7 @@ export default function HomeScreen() {
         <View style={styles.header}>
           <View>
             <Text style={styles.greeting}>SYSTEM READY</Text>
-            <Text style={styles.headerTitle}>Nova AI</Text>
+            <Text style={styles.headerTitle}>Lab AI</Text>
           </View>
           <View style={styles.avatar}>
             <HugeiconsIcon icon={Flask} size={20} color={C.white} />

@@ -173,29 +173,10 @@ async function ensureMicPermission(): Promise<boolean> {
   return granted;
 }
 
-async function transcribeWithNova(audioUri: string): Promise<string> {
-  const key = process.env.EXPO_PUBLIC_NOVA_API_KEY;
-  if (!key) throw new Error("EXPO_PUBLIC_NOVA_API_KEY is not set.");
-  const fd = new FormData();
-  fd.append("file", {
-    uri: audioUri,
-    name: "recording.m4a",
-    type: "audio/m4a",
-  } as any);
-  fd.append("model", "nova-2-sonic-v1");
-  const res = await fetch("https://api.nova.amazon.com/v1/chat/completions", {
-    method: "POST",
-    headers: { Authorization: `Bearer ${key}` },
-    body: fd,
-  });
-  if (!res.ok) {
-    const j = await res.json().catch(() => ({}));
-    throw new Error(
-      (j as any)?.error?.message ?? `Transcription failed (${res.status})`,
-    );
-  }
-  const j = await res.json();
-  return ((j as any).text as string) ?? "";
+async function transcribeRecording(audioUri: string): Promise<string> {
+  const res = await api.transcribeAudio(audioUri);
+  if (!res.success) throw new Error(res.error ?? "Transcription failed");
+  return res.data?.text ?? "";
 }
 
 // ── Attachment strip ──────────────────────────────────────────────────────────
@@ -455,11 +436,11 @@ function Sidebar({
         { transform: [{ translateX }], paddingTop: insets.top },
       ]}
     >
-      {/* Header — "LAB ASSISTANT / Nova AI" mirror */}
+      {/* Header — "LAB ASSISTANT / Lab AI" mirror */}
       <View style={s.sidebarHeader}>
         <View>
           <Text style={s.sidebarGreeting}>LAB ASSISTANT</Text>
-          <Text style={s.sidebarTitle}>Nova AI</Text>
+          <Text style={s.sidebarTitle}>Lab AI</Text>
         </View>
         <Pressable onPress={onClose} style={s.sidebarCloseBtn}>
           <HugeiconsIcon icon={Cancel01Icon} size={18} color={C.textMuted} />
@@ -708,7 +689,7 @@ export default function AnalyzeScreen() {
       await audioRecorder.stop();
       const uri = audioRecorder.uri;
       if (!uri) throw new Error("No recording URI found");
-      const transcript = await transcribeWithNova(uri);
+      const transcript = await transcribeRecording(uri);
       setTranscriptionResult(transcript);
       setUiRecordingStatus("done");
     } catch (e: any) {
@@ -1365,7 +1346,7 @@ export default function AnalyzeScreen() {
 
           <View style={s.headerCenter}>
             <Text style={s.headerGreeting}>LAB ASSISTANT</Text>
-            <Text style={s.headerTitle}>Nova AI</Text>
+            <Text style={s.headerTitle}>Lab AI</Text>
           </View>
 
           <Pressable onPress={handleNewChat} style={s.headerIconBtn}>

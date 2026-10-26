@@ -11,7 +11,7 @@
     "ios": {
       "supportsTablet": true,
       "infoPlist": {
-        "NSMicrophoneUsageDescription": "Nova Lab needs microphone access to let you send voice messages.",
+        "NSMicrophoneUsageDescription": "Lab Assistant needs microphone access to let you send voice messages.",
         "ITSAppUsesNonExemptEncryption": false
       },
       "bundleIdentifier": "metinalabs.labaiassistant"

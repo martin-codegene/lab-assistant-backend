@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   postgres:
     image: postgres:16-alpine
@@ -9,7 +7,7 @@ services:
       POSTGRES_PASSWORD: password
       POSTGRES_DB: lab_assistant_db
     ports:
-      - "5432:5432"
+      - "5433:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./postgres-init:/docker-entrypoint-initdb.d
@@ -23,7 +21,7 @@ services:
     image: redis:7-alpine
     container_name: lab_assistant_redis
     ports:
-      - "6379:6379"
+      - "6380:6379"
     volumes:
       - redis_data:/data
     command: redis-server --appendonly yes
@@ -32,7 +30,7 @@ services:
     image: adminer:latest
     container_name: lab_assistant_adminer
     ports:
-      - "8080:8080"
+      - "8088:8080"
     depends_on:
       - postgres
 
